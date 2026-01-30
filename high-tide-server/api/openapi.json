@@ -1,0 +1,213 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "high-tide",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "servers": [
+    {
+      "url": "{{server-host}}:{{server-port}}"
+    }
+  ],
+  "paths": {
+    "/posts": {
+      "get": {
+        "summary": "Get All Posts",
+        "responses": {
+          "200": {
+            "description": "GetAllPosts_200OK",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:27:35 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "178"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create New Post",
+        "responses": {
+          "201": {
+            "description": "CreateNewPost_201Created",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:27:31 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "88"
+              }
+            }
+          },
+          "400": {
+            "description": "CreateNewPost_400BadRequest",
+            "headers": {
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "nosniff"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:31:05 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "21"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "data": "This is my newest post"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/post": {
+      "get": {
+        "summary": "Get Post by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "deprecated": false,
+            "schema": {},
+            "example": "4"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GetPostByID_200OK",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:27:46 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "88"
+              }
+            }
+          },
+          "404": {
+            "description": "GetPostByID_404NotFound",
+            "headers": {
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "nosniff"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:29:53 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "15"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "deprecated": false,
+            "schema": {},
+            "example": "5"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DeletePost_200OK",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:27:58 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "88"
+              }
+            }
+          },
+          "404": {
+            "description": "DeletePost_404NotFound",
+            "headers": {
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "nosniff"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Fri, 30 Jan 2026 20:31:48 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": "15"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

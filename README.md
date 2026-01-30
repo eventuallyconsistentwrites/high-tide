@@ -17,7 +17,7 @@ go mod tidy
 ```
 
 ```bash
-go build -o api ./cmd/api/main.go
+go build -o hts-main ./cmd/api/main.go
 ```
 
 ### Install Dependencies
@@ -33,7 +33,7 @@ go mod tidy
 go run ./cmd/api/main.go
 
 # Or in case of pre-built binary
-./api
+./hts-main
 ```
 
 ### Testing Count-min Sketch
@@ -46,6 +46,9 @@ go test -v ./countmin
 
 ## Directory Structure
 
+### `api`
+Contains server contract information
+
 ### `cmd`
 `api/main.go` contains application entry point
 
@@ -57,10 +60,16 @@ Contains demo go script to use `CountMinSketch` data structure
 
 ### `internal`
 
-#### `post`
-Interfaces for DB connection
+#### `domain`
+Contains definitions for data structures that will be used to structure the incoming request bodies as well as define sqlite tables.
+
+#### `repository`
+Related to ORM system that is used to make the sqlite queries.
+
+#### `routes`
+Defines APIs
 
 #### `server`
-Contains API logic
+Contains business logic that makes use of repositories. The results are returned to the APIs that queried the server.
 
 ---
