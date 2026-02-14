@@ -4,7 +4,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/eventuallyconsistentwrites/high-tide-server/countmin"
 	"github.com/eventuallyconsistentwrites/high-tide-server/internal/domain"
+	"github.com/eventuallyconsistentwrites/high-tide-server/internal/middleware"
 	"github.com/eventuallyconsistentwrites/high-tide-server/internal/repository"
 	"github.com/eventuallyconsistentwrites/high-tide-server/internal/routes"
 	"github.com/eventuallyconsistentwrites/high-tide-server/internal/service"
@@ -37,9 +39,19 @@ func main() {
 	// Register routes
 	postHandler.RegisterRoutes(mux)
 
-	// 6. START SERVER
+	// Initialize Count-Min Sketch and Rate Limiter middleware.
+	// These values can be tuned for your specific needs.
+	cms := countmin.NewCountMinSketch(5, 25)
+	rateLimiter := middleware.NewRateLimiter(cms, 20) // Block IPs after 20 requests
+
+	// Wrap the main router with the rate-limiting middleware.
+	// All requests will now pass through the rate limiter first.
+	var handler http.Handler = mux
+	handler = rateLimiter.Limit(handler)
+
+	// START SERVER
 	log.Println("Server starting on :8080...")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		log.Fatal(err)
 	}
 }
