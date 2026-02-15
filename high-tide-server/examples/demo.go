@@ -11,20 +11,20 @@ func main() {
 	cms := countmin.NewCountMinSketch(3, 4)
 
 	// Display
-	cms.DisplayCMS()
+	fmt.Println(cms)
 
 	// Insert Values
 	cms.Update("Iphone")
 	fmt.Println("Inserted Iphone")
-	cms.DisplayCMS()
+	fmt.Println(cms)
 
 	cms.Update("Android")
 	fmt.Println("Inserted Android")
-	cms.DisplayCMS()
+	fmt.Println(cms)
 
 	cms.Update("Windows")
 	fmt.Println("Inserted Windows")
-	cms.DisplayCMS()
+	fmt.Println(cms)
 
 	//Query Value
 	val := "Android"

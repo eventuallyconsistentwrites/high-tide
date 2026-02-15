@@ -3,6 +3,7 @@ module github.com/eventuallyconsistentwrites/high-tide-server
 go 1.23.4
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/twmb/murmur3 v1.1.8
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1

@@ -36,3 +36,7 @@ go.work.sum
 hts-main
 
 .idea
+
+
+# Persisted data directories
+**/data/

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  high-tide-server:
+    build:
+      context: ../high-tide-server
+      dockerfile: Dockerfile
+    ports:
+      - "8081:${SERVER_PORT:-8080}" # Map host 8081 to the container's server port
+    environment:
+      - LISTEN_ADDR=:${SERVER_PORT:-8080}
+      - DB_PATH=/app/data/high_tide.db
+      - RESET_INTERVAL=120
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${SERVER_PORT:-8080}/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # Persist the sqlite database file on the host machine
+      - ../high-tide-server/data:/app/data
+
+  tester:
+    build: .
+    environment:
+      - SERVER_HOST=${SERVER_HOST}
+      - SERVER_PORT=${SERVER_PORT}
+    depends_on:
+      high-tide-server:
+        condition: service_healthy
