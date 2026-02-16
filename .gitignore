@@ -40,3 +40,5 @@ hts-main
 
 # Persisted data directories
 **/data/
+
+.DS_Store

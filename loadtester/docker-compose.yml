@@ -2,11 +2,12 @@ version: '3.8'
 
 services:
   high-tide-server:
+    # ... (Keep your server config exactly as it is) ...
     build:
       context: ../high-tide-server
       dockerfile: Dockerfile
     ports:
-      - "8081:${SERVER_PORT:-8080}" # Map host 8081 to the container's server port
+      - "8081:${SERVER_PORT:-8080}"
     environment:
       - LISTEN_ADDR=:${SERVER_PORT:-8080}
       - DB_PATH=/app/data/high_tide.db
@@ -17,14 +18,21 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      # Persist the sqlite database file on the host machine
       - ../high-tide-server/data:/app/data
 
-  tester:
-    build: .
-    environment:
-      - SERVER_HOST=${SERVER_HOST}
-      - SERVER_PORT=${SERVER_PORT}
+  # This replaces the 'tester' service
+  k6-worker:
+    image: grafana/k6:latest
     depends_on:
       high-tide-server:
         condition: service_healthy
+    volumes:
+      # Mount the local script so the container can see it
+      - ./loadtest.js:/script.js
+    environment:
+      - SERVER_HOST=high-tide-server
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - K6_VUS=${K6_VUS:-10}           # Default to 10 if not set
+      - K6_DURATION=${K6_DURATION:-30s} # Default to 30s if not set
+    # Run the script with 100 users per container
+    command: run /script.js
