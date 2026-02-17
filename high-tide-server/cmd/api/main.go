@@ -90,7 +90,11 @@ func main() {
 
 	// Initialize Count-Min Sketch and Rate Limiter middleware.
 	// These values can be tuned for your specific needs.
-	cms := countmin.NewCountMinSketch(5, 25)
+	cms := countmin.NewCountMinSketch(0.01, 0.001)
+	logger.Info("Initialised CMS",
+		"NumberOfHashFunctions", cms.NumberOfHashFunctions,
+		"Width", cms.Width,
+	)
 
 	// Periodically reset the Count-Min Sketch to avoid saturation with old values.
 	// This goroutine will create a new ticker that fires at the specified interval.

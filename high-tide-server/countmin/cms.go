@@ -5,24 +5,31 @@ import (
 	"math"
 	"strings"
 	"sync"
+
 	"github.com/twmb/murmur3"
 )
 
 type CountMinSketch struct {
-	numberOfHashFunctions int
-	width                 uint32
+	NumberOfHashFunctions int
+	certainty             float64
+	Width                 uint32
+	errorMargin           float64
 	cmsTable              [][]int
 	mu                    sync.RWMutex
 }
 
-func NewCountMinSketch(numberOfHashFunctions int, width uint32) *CountMinSketch {
+func NewCountMinSketch(certainty float64, errorMargin float64) *CountMinSketch {
+	width := math.Ceil(math.E / errorMargin)
+	numberOfHashFunctions := math.Ceil(math.Log(1 / certainty))
 	cms := &CountMinSketch{
-		numberOfHashFunctions: numberOfHashFunctions,
-		width:                 width,
-		cmsTable:              make([][]int, numberOfHashFunctions),
+		NumberOfHashFunctions: int(numberOfHashFunctions),
+		certainty:             certainty,
+		Width:                 uint32(width),
+		errorMargin:           errorMargin,
+		cmsTable:              make([][]int, int(numberOfHashFunctions)),
 	}
 	for i := range cms.cmsTable {
-		cms.cmsTable[i] = make([]int, width)
+		cms.cmsTable[i] = make([]int, cms.Width)
 	}
 	return cms
 }
@@ -34,15 +41,14 @@ func (cms *CountMinSketch) String() string {
 	defer cms.mu.RUnlock()
 
 	var b strings.Builder
-
 	b.WriteString("\t: ")
-	for i := 0; i < int(cms.width); i++ {
+	for i := 0; i < int(cms.Width); i++ {
 		b.WriteString(fmt.Sprintf("%d\t", i))
 	}
 	b.WriteRune('\n')
-	for i := 0; i < cms.numberOfHashFunctions; i++ {
+	for i := 0; i < cms.NumberOfHashFunctions; i++ {
 		b.WriteString(fmt.Sprintf("h%d\t: ", i))
-		for j := 0; j < int(cms.width); j++ {
+		for j := 0; j < int(cms.Width); j++ {
 			b.WriteString(fmt.Sprintf("%d\t", cms.cmsTable[i][j]))
 		}
 		b.WriteRune('\n')
@@ -54,10 +60,10 @@ func (cms *CountMinSketch) Update(value string) {
 	cms.mu.Lock()
 	defer cms.mu.Unlock()
 	var data []byte = []byte(value)
-	for i := 0; i < cms.numberOfHashFunctions; i++ {
+	for i := 0; i < cms.NumberOfHashFunctions; i++ {
 		var seed uint32 = uint32(i)
 		hashValue := murmur3.SeedSum32(seed, data)
-		cms.cmsTable[i][hashValue%cms.width]++
+		cms.cmsTable[i][hashValue%cms.Width]++
 	}
 }
 
@@ -66,10 +72,10 @@ func (cms *CountMinSketch) PointQuery(value string) int {
 	defer cms.mu.RUnlock()
 	var data []byte = []byte(value)
 	minFreq := math.MaxInt
-	for i := 0; i < cms.numberOfHashFunctions; i++ {
+	for i := 0; i < cms.NumberOfHashFunctions; i++ {
 		var seed uint32 = uint32(i)
 		hashValue := murmur3.SeedSum32(seed, data)
-		freq := cms.cmsTable[i][hashValue%cms.width]
+		freq := cms.cmsTable[i][hashValue%cms.Width]
 		if freq < minFreq {
 			minFreq = freq
 		}

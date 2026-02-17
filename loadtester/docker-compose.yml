@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   high-tide-server:
-    # ... (Keep your server config exactly as it is) ...
     build:
       context: ../high-tide-server
       dockerfile: Dockerfile
