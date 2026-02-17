@@ -10,15 +10,15 @@ import (
 
 // RateLimiter is a middleware that uses a Count-Min Sketch to limit requests from IPs.
 type RateLimiter struct {
-	cms       *countmin.CountMinSketch
+	counter   countmin.BaseCounter
 	threshold int
 	logger    *slog.Logger
 }
 
 // NewRateLimiter creates a new RateLimiter middleware.
-func NewRateLimiter(cms *countmin.CountMinSketch, threshold int, logger *slog.Logger) *RateLimiter {
+func NewRateLimiter(baseCounter *countmin.BaseCounter, threshold int, logger *slog.Logger) *RateLimiter {
 	return &RateLimiter{
-		cms:       cms,
+		counter:   *baseCounter,
 		threshold: threshold,
 		logger:    logger,
 	}
@@ -43,10 +43,10 @@ func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
 		requestLogger := rl.logger.With("ip", ip, "remote_addr", r.RemoteAddr)
 		requestLogger.Info("checking rate limit")
 
-		rl.cms.Update(ip)
-		count := rl.cms.PointQuery(ip)
+		rl.counter.Update(ip)
+		count := rl.counter.PointQuery(ip)
 
-		// rl.cms.DisplayCMS() // This can be very verbose, consider removing from hot path
+		// rl.counter.DisplayCMS() // This can be very verbose, consider removing from hot path
 		if count > rl.threshold {
 			requestLogger.Warn("rate limit exceeded", "count", count, "threshold", rl.threshold)
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)

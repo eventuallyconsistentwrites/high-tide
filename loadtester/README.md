@@ -71,9 +71,13 @@ The test logic is defined in `loadtest.js`.
 ### View Logs
 
 Watch the aggregate logs from all K6 workers to see the test progress:
-
 ```bash
 docker-compose logs -f k6-worker
+```
+
+Similarly, to see logs of high-tide-server:
+```bash
+docker-compose logs -f high-tide-server
 ```
 
 ### Verify Source IPs
@@ -83,3 +87,27 @@ To confirm that your load is coming from different IP addresses, list the intern
 ```bash
 docker inspect --format '{{.Name}} - IP: {{.NetworkSettings.Networks.loadtester_default.IPAddress}}' $(docker-compose ps -q k6-worker)
 ```
+
+
+
+## The Set-up Used
+
+1. Run one high-tide-server container and 100 k6-worker containers each having 1000 virtual users.
+```bash
+K6_VUS=1000 K6_DURATION=1m RL_MODE=none docker-compose up -d --scale k6-worker=100
+# RL_MODE can take the values cms, map or none
+```
+
+2. Redirect the k6-worker logs and high-tide-server logs to log files
+```bash
+docker-compose logs k6-worker > k6-worker.log
+docker-compose logs high-tide-server > high-tide-server.log
+# This was done for each RL_MODE value
+```
+
+3. Visualise results using python script
+```bash
+python3 visualise-k6.py k6-worker.log
+```
+
+---

@@ -35,11 +35,13 @@ func main() {
 	dbPath := os.Getenv("DB_PATH")
 	resetIntervalStr := os.Getenv("RESET_INTERVAL")
 	listenAddr := os.Getenv("LISTEN_ADDR")
+	rlMode := os.Getenv("RL_MODE")
 	logger.Info(
 		"From .env",
 		"dbPath", dbPath,
 		"resetIntervalStr", resetIntervalStr,
 		"listenAddr", listenAddr,
+		"rlMode", rlMode,
 	)
 	if dbPath == "" {
 		dbPath = "high_tide.db" // Default for local, non-containerized runs
@@ -57,6 +59,26 @@ func main() {
 
 	}
 	logger.Info("Count-Min Sketch reset interval configured", "seconds", resetInterval)
+
+	if listenAddr == "" {
+		listenAddr = ":8080" // Default for local, non-containerized runs
+	}
+
+	var counter countmin.BaseCounter = countmin.NewMapCounter()
+	if rlMode == "cms" {
+		// Initialize Count-Min Sketch and Rate Limiter middleware.
+		// These values can be tuned for your specific needs.
+		counter = countmin.NewCountMinSketch(0.01, 0.001)
+		logger.Info("Initialised CMS",
+			"NumberOfHashFunctions", counter.(*countmin.CountMinSketch).NumberOfHashFunctions,
+			"Width", counter.(*countmin.CountMinSketch).Width,
+		)
+	} else if rlMode == "none" {
+		counter = nil
+		logger.Info("Rate Limiting Disabled")
+	} else {
+		logger.Info("Defaulting to MapCounter", "map", counter)
+	}
 
 	// Connect to sqlite database
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
@@ -88,34 +110,23 @@ func main() {
 	// Register routes
 	postHandler.RegisterRoutes(mux)
 
-	// Initialize Count-Min Sketch and Rate Limiter middleware.
-	// These values can be tuned for your specific needs.
-	cms := countmin.NewCountMinSketch(0.01, 0.001)
-	logger.Info("Initialised CMS",
-		"NumberOfHashFunctions", cms.NumberOfHashFunctions,
-		"Width", cms.Width,
-	)
-
-	// Periodically reset the Count-Min Sketch to avoid saturation with old values.
-	// This goroutine will create a new ticker that fires at the specified interval.
-	// On each tick, it will reset the sketch.
-	go func() {
-		ticker := time.NewTicker(time.Duration(resetInterval) * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			logger.Info("Resetting count-min sketch")
-			cms.Reset()
-		}
-	}()
-	rateLimiter := middleware.NewRateLimiter(cms, 20, logger) // Block IPs after 20 requests
-
-	// Wrap the main router with the rate-limiting middleware.
+	// Wrap the main router with the rate-limiting middleware (if CMS enabled).
 	// All requests will now pass through the rate limiter first.
 	var handler http.Handler = mux
-	handler = rateLimiter.Limit(handler)
-
-	if listenAddr == "" {
-		listenAddr = ":8080" // Default for local, non-containerized runs
+	if counter != nil {
+		// Periodically reset the Count-Min Sketch to avoid saturation with old values.
+		// This goroutine will create a new ticker that fires at the specified interval.
+		// On each tick, it will reset the sketch.
+		go func() {
+			ticker := time.NewTicker(time.Duration(resetInterval) * time.Second)
+			defer ticker.Stop()
+			for range ticker.C {
+				logger.Info("Resetting counter")
+				counter.Reset()
+			}
+		}()
+		rateLimiter := middleware.NewRateLimiter(&counter, 100, logger) // Block IPs after 20 requests
+		handler = rateLimiter.Limit(handler)
 	}
 
 	// START SERVER
