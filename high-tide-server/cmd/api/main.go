@@ -36,12 +36,18 @@ func main() {
 	resetIntervalStr := os.Getenv("RESET_INTERVAL")
 	listenAddr := os.Getenv("LISTEN_ADDR")
 	rlMode := os.Getenv("RL_MODE")
+	cmsCertaintyStr := os.Getenv("CMS_CERTAINTY")
+	cmsErrorMarginStr := os.Getenv("CMS_ERROR_MARGIN")
+	thresholdStr := os.Getenv("THRESHOLD")
 	logger.Info(
 		"From .env",
 		"dbPath", dbPath,
 		"resetIntervalStr", resetIntervalStr,
 		"listenAddr", listenAddr,
 		"rlMode", rlMode,
+		"cmsCertaintyStr", cmsCertaintyStr,
+		"cmsErrorMarginStr", cmsErrorMarginStr,
+		"thresholdStr", thresholdStr,
 	)
 	if dbPath == "" {
 		dbPath = "high_tide.db" // Default for local, non-containerized runs
@@ -55,8 +61,6 @@ func main() {
 			logger.Warn("Invalid RESET_INTERVAL, using default value", "value", resetIntervalStr, "defaultSeconds", resetInterval)
 			resetInterval = 30 // Fallback to default if parsing fails
 		}
-	} else {
-
 	}
 	logger.Info("Count-Min Sketch reset interval configured", "seconds", resetInterval)
 
@@ -66,9 +70,27 @@ func main() {
 
 	var counter countmin.BaseCounter = countmin.NewMapCounter()
 	if rlMode == "cms" {
+
+		cmsCertainty := 0.01
+		if cmsCertaintyStr != "" {
+			var err error
+			cmsCertainty, err = strconv.ParseFloat(cmsCertaintyStr, 64)
+			if err != nil {
+				logger.Warn("Invalid RESET_INTERVAL, using default value", "value", resetIntervalStr, "defaultSeconds", resetInterval)
+				cmsCertainty = 0.01 // Fallback to default if parsing fails
+			}
+		}
+		cmsErrorMargin := 0.001
+		if cmsErrorMarginStr != "" {
+			var err error
+			cmsErrorMargin, err = strconv.ParseFloat(cmsErrorMarginStr, 64)
+			if err != nil {
+				logger.Warn("Invalid RESET_INTERVAL, using default value", "value", resetIntervalStr, "defaultSeconds", resetInterval)
+				cmsErrorMargin = 0.001 // Fallback to default if parsing fails
+			}
+		}
 		// Initialize Count-Min Sketch and Rate Limiter middleware.
-		// These values can be tuned for your specific needs.
-		counter = countmin.NewCountMinSketch(0.01, 0.001)
+		counter = countmin.NewCountMinSketch(cmsCertainty, cmsErrorMargin)
 		logger.Info("Initialised CMS",
 			"NumberOfHashFunctions", counter.(*countmin.CountMinSketch).NumberOfHashFunctions,
 			"Width", counter.(*countmin.CountMinSketch).Width,
@@ -125,7 +147,16 @@ func main() {
 				counter.Reset()
 			}
 		}()
-		rateLimiter := middleware.NewRateLimiter(&counter, 100, logger) // Block IPs after 20 requests
+		threshold := 100 // Default value in seconds
+		if thresholdStr != "" {
+			var err error
+			threshold, err = strconv.Atoi(thresholdStr)
+			if err != nil {
+				logger.Warn("Invalid RESET_INTERVAL, using default value", "value", resetIntervalStr, "defaultSeconds", resetInterval)
+				threshold = 100 // Fallback to default if parsing fails
+			}
+		}
+		rateLimiter := middleware.NewRateLimiter(&counter, threshold, logger) // Block IPs after 20 requests
 		handler = rateLimiter.Limit(handler)
 	}
 

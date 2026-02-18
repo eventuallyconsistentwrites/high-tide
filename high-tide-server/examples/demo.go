@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// Initialize
-	cms := countmin.NewCountMinSketch(3, 4)
+	cms := countmin.NewCountMinSketch(0.1, 0.2)
 
 	// Display
 	fmt.Println(cms)

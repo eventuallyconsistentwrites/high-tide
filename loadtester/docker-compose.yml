@@ -12,6 +12,9 @@ services:
       - DB_PATH=/app/data/high_tide.db
       - RESET_INTERVAL=${RESET_INTERVAL:-120}
       - RL_MODE=${RL_MODE:-cms} #can take values: cms, map, none
+      - CMS_CERTAINTY=${CMS_CERTAINTY:-0.01}
+      - CMS_ERROR_MARGIN=${CMS_ERROR_MARGIN:-0.001}
+      - THRESHOLD=${THRESHOLD:-100}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${SERVER_PORT:-8080}/healthz"]
       interval: 10s
